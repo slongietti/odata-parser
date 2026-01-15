@@ -3,9 +3,10 @@ import Lexer from "./lexer";
 import PrimitiveLiteral from "./primitiveLiteral";
 import NameOrIdentifier from "./nameOrIdentifier";
 import Expressions from "./expressions";
+import { NullableToken } from "./types/nullableToken";
 
 export namespace ArrayOrObject {
-    export function complexColInUri(value: Utils.SourceArray, index: number): Lexer.Token {
+    export function complexColInUri(value: Utils.SourceArray, index: number): NullableToken {
         let begin = Lexer.beginArray(value, index);
         if (begin === index) return;
         let start = index;
@@ -40,7 +41,7 @@ export namespace ArrayOrObject {
         return Lexer.tokenize(value, start, index, { items }, Lexer.TokenType.Array);
     }
 
-    export function complexInUri(value: Utils.SourceArray, index: number): Lexer.Token {
+    export function complexInUri(value: Utils.SourceArray, index: number): NullableToken {
         let begin = Lexer.beginObject(value, index);
         if (begin === index) return;
         let start = index;
@@ -83,7 +84,7 @@ export namespace ArrayOrObject {
         return Lexer.tokenize(value, start, index, { items }, Lexer.TokenType.Object);
     }
 
-    export function collectionPropertyInUri(value: Utils.SourceArray, index: number): Lexer.Token {
+    export function collectionPropertyInUri(value: Utils.SourceArray, index: number): NullableToken {
         let mark = Lexer.quotationMark(value, index);
         if (mark === index) return;
         let start = index;
@@ -113,7 +114,7 @@ export namespace ArrayOrObject {
         return Lexer.tokenize(value, start, index, { key: prop, value: propValue }, Lexer.TokenType.Property);
     }
 
-    export function primitiveColInUri(value: Utils.SourceArray, index: number): Lexer.Token {
+    export function primitiveColInUri(value: Utils.SourceArray, index: number): NullableToken {
         let begin = Lexer.beginArray(value, index);
         if (begin === index) return;
         let start = index;
@@ -148,7 +149,7 @@ export namespace ArrayOrObject {
         return Lexer.tokenize(value, start, index, { items }, Lexer.TokenType.Array);
     }
 
-    export function complexPropertyInUri(value: Utils.SourceArray, index: number): Lexer.Token {
+    export function complexPropertyInUri(value: Utils.SourceArray, index: number): NullableToken {
         let mark = Lexer.quotationMark(value, index);
         if (mark === index) return;
         let start = index;
@@ -173,7 +174,7 @@ export namespace ArrayOrObject {
         return Lexer.tokenize(value, start, index, { key: prop, value: propValue }, Lexer.TokenType.Property);
     }
 
-    export function annotationInUri(value: Utils.SourceArray, index: number): Lexer.Token {
+    export function annotationInUri(value: Utils.SourceArray, index: number): NullableToken {
         let mark = Lexer.quotationMark(value, index);
         if (mark === index) return;
         let start = index;
@@ -216,7 +217,7 @@ export namespace ArrayOrObject {
         }, Lexer.TokenType.Annotation);
     }
 
-    export function keyValuePairInUri(value: Utils.SourceArray, index: number, keyFn: Function, valueFn: Function): Lexer.Token {
+    export function keyValuePairInUri(value: Utils.SourceArray, index: number, keyFn: Function, valueFn: Function): NullableToken {
         let mark = Lexer.quotationMark(value, index);
         if (mark === index) return;
         let start = index;
@@ -241,24 +242,24 @@ export namespace ArrayOrObject {
         return Lexer.tokenize(value, start, index, { key: prop, value: propValue }, Lexer.TokenType.Property);
     }
 
-    export function primitivePropertyInUri(value: Utils.SourceArray, index: number): Lexer.Token {
+    export function primitivePropertyInUri(value: Utils.SourceArray, index: number): NullableToken {
         return ArrayOrObject.keyValuePairInUri(value, index, NameOrIdentifier.primitiveProperty, primitiveLiteralInJSON);
     }
 
-    export function navigationPropertyInUri(value: Utils.SourceArray, index: number): Lexer.Token {
+    export function navigationPropertyInUri(value: Utils.SourceArray, index: number): NullableToken {
         return ArrayOrObject.singleNavPropInJSON(value, index) ||
             ArrayOrObject.collectionNavPropInJSON(value, index);
     }
 
-    export function singleNavPropInJSON(value: Utils.SourceArray, index: number): Lexer.Token {
+    export function singleNavPropInJSON(value: Utils.SourceArray, index: number): NullableToken {
         return ArrayOrObject.keyValuePairInUri(value, index, NameOrIdentifier.entityNavigationProperty, Expressions.rootExpr);
     }
 
-    export function collectionNavPropInJSON(value: Utils.SourceArray, index: number): Lexer.Token {
+    export function collectionNavPropInJSON(value: Utils.SourceArray, index: number): NullableToken {
         return ArrayOrObject.keyValuePairInUri(value, index, NameOrIdentifier.entityColNavigationProperty, rootExprCol);
     }
 
-    export function rootExprCol(value: Utils.SourceArray, index: number): Lexer.Token {
+    export function rootExprCol(value: Utils.SourceArray, index: number): NullableToken {
         let begin = Lexer.beginArray(value, index);
         if (begin === index) return;
         let start = index;
@@ -293,23 +294,23 @@ export namespace ArrayOrObject {
         return Lexer.tokenize(value, start, index, { items }, Lexer.TokenType.Array);
     }
 
-    export function primitiveLiteralInJSON(value: Utils.SourceArray, index: number): Lexer.Token {
+    export function primitiveLiteralInJSON(value: Utils.SourceArray, index: number): NullableToken {
         return ArrayOrObject.stringInJSON(value, index) ||
             ArrayOrObject.numberInJSON(value, index) ||
             ArrayOrObject.booleanInJSON(value, index) ||
             ArrayOrObject.nullInJSON(value, index);
     }
 
-    export function stringInJSON(value: Utils.SourceArray, index: number): Lexer.Token {
+    export function stringInJSON(value: Utils.SourceArray, index: number): NullableToken {
         let mark = Lexer.quotationMark(value, index);
         if (mark === index) return;
         let start = index;
         index = mark;
 
-        let char = ArrayOrObject.charInJSON(value, index);
+        let char = ArrayOrObject.charInJSON(value, index) ?? 0;
         while (char > index) {
             index = char;
-            char = ArrayOrObject.charInJSON(value, index);
+            char = ArrayOrObject.charInJSON(value, index) ?? 0;
         }
 
         mark = Lexer.quotationMark(value, index);
@@ -319,7 +320,7 @@ export namespace ArrayOrObject {
         return Lexer.tokenize(value, start, index, "string", Lexer.TokenType.Literal);
     }
 
-    export function charInJSON(value: Utils.SourceArray, index: number): number {
+    export function charInJSON(value: Utils.SourceArray, index: number): number | undefined {
         let escape = Lexer.escape(value, index);
         if (escape > index) {
             if (Utils.equals(value, escape, "%2F")) return escape + 3;
@@ -341,7 +342,7 @@ export namespace ArrayOrObject {
         }
     }
 
-    export function numberInJSON(value: Utils.SourceArray, index: number): Lexer.Token {
+    export function numberInJSON(value: Utils.SourceArray, index: number): NullableToken {
         let token = PrimitiveLiteral.doubleValue(value, index) ||
             PrimitiveLiteral.int64Value(value, index);
         if (token) {
@@ -350,16 +351,16 @@ export namespace ArrayOrObject {
         }
     }
 
-    export function booleanInJSON(value: Utils.SourceArray, index: number): Lexer.Token {
+    export function booleanInJSON(value: Utils.SourceArray, index: number): NullableToken {
         if (Utils.equals(value, index, "true")) return Lexer.tokenize(value, index, index + 4, "boolean", Lexer.TokenType.Literal);
         if (Utils.equals(value, index, "false")) return Lexer.tokenize(value, index, index + 5, "boolean", Lexer.TokenType.Literal);
     }
 
-    export function nullInJSON(value: Utils.SourceArray, index: number): Lexer.Token {
+    export function nullInJSON(value: Utils.SourceArray, index: number): NullableToken {
         if (Utils.equals(value, index, "null")) return Lexer.tokenize(value, index, index + 4, "null", Lexer.TokenType.Literal);
     }
 
-    export function arrayOrObject(value: Utils.SourceArray, index: number): Lexer.Token {
+    export function arrayOrObject(value: Utils.SourceArray, index: number): NullableToken {
         let token = ArrayOrObject.complexColInUri(value, index) ||
             ArrayOrObject.complexInUri(value, index) ||
             ArrayOrObject.rootExprCol(value, index) ||
