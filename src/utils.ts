@@ -34,7 +34,7 @@ export namespace Utils {
 
 
     export function parseTimeUnit(value: Utils.SourceArray, index: number): string | undefined {
-        const timeUnits = ["day", "days", "hour", "hours", "minute", "minutes", "second", "seconds"];
+        const timeUnits = ["year", "years", "month", "months", "day", "days", "hour", "hours", "minute", "minutes", "second", "seconds"];
 
         for (const unit of timeUnits) {
             if (Utils.equals(value, index, unit)) {

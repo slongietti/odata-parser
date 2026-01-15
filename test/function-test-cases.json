@@ -274,6 +274,78 @@
     }
   },
   {
+    "-Name": "Date Now() Modification: Add year",
+    "-Rule": "nowMethodCallExpr",
+    "Input": "now() + 1 year",
+    "result": {
+      "position": 0,
+      "next": 14,
+      "type": "MethodCallExpression",
+      "value": {
+        "method": "now",
+        "offset": {
+          "value": 1,
+          "unit": "year"
+        }
+      },
+      "raw": "now() + 1 year"
+    }
+  },
+  {
+    "-Name": "Date Now() Modification: Add years",
+    "-Rule": "nowMethodCallExpr",
+    "Input": "now() + 2 years",
+    "result": {
+      "position": 0,
+      "next": 14,
+      "type": "MethodCallExpression",
+      "value": {
+        "method": "now",
+        "offset": {
+          "value": 2,
+          "unit": "year"
+        }
+      },
+      "raw": "now() + 2 year"
+    }
+  },
+  {
+    "-Name": "Date Now() Modification: Add month",
+    "-Rule": "nowMethodCallExpr",
+    "Input": "now() + 1 month",
+    "result": {
+      "position": 0,
+      "next": 15,
+      "type": "MethodCallExpression",
+      "value": {
+        "method": "now",
+        "offset": {
+          "value": 1,
+          "unit": "month"
+        }
+      },
+      "raw": "now() + 1 month"
+    }
+  },
+  {
+    "-Name": "Date Now() Modification: Add months",
+    "-Rule": "nowMethodCallExpr",
+    "Input": "now() + 2 months",
+    "result": {
+      "position": 0,
+      "next": 15,
+      "type": "MethodCallExpression",
+      "value": {
+        "method": "now",
+        "offset": {
+          "value": 2,
+          "unit": "month"
+        }
+      },
+      "raw": "now() + 2 month"
+    }
+  },
+  {
     "-Name": "Date Now() Modification: Add day",
     "-Rule": "nowMethodCallExpr",
     "Input": "now() + 1 day",
