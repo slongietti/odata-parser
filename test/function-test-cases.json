@@ -885,7 +885,7 @@
       "value": "Edm.GeometryPolygon"
     }
   },
-{
+  {
   "-Name": "Custom Function",
   "-Rule": "commonExpr",
   "Input": "myCustomFunction(param1, 42, 'test')",
@@ -978,6 +978,6 @@
       ]
     }
   }
-}
+  }
   }
 ]

@@ -1,4 +1,4 @@
-export enum ODataFunctions {
+export enum ODataMethod {
   // String functions
   Contains = 'contains',
   StartsWith = 'startswith',
@@ -6,6 +6,7 @@ export enum ODataFunctions {
   Length = 'length',
   IndexOf = 'indexof',
   Substring = 'substring',
+  SubstringOf = 'substringof',
   ToLower = 'tolower',
   ToUpper = 'toupper',
   Trim = 'trim',

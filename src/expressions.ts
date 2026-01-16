@@ -4,7 +4,8 @@ import PrimitiveLiteral from "./primitiveLiteral";
 import NameOrIdentifier from "./nameOrIdentifier";
 import ArrayOrObject from "./json";
 import { NullableToken } from "./types/nullableToken";
-import { isPropertyName, visitLexicalEnvironment } from "typescript";
+import { ODataMethod } from "./types/odataMethod";
+import { ODataOperator } from "./types/odataOperator";
 
 export namespace Expressions {
     export function commonExpr(value: Utils.SourceArray, index: number): NullableToken {
@@ -125,13 +126,16 @@ export namespace Expressions {
         return Lexer.tokenize(value, start, index, token, Lexer.TokenType.OrExpression);
     }
 
-    export function leftRightExpr(value: Utils.SourceArray, index: number, expr: string, tokenType: Lexer.TokenType): NullableToken {
+    export function leftRightExpr(value: Utils.SourceArray, index: number, expr: ODataOperator, tokenType: Lexer.TokenType): NullableToken {
         let rws = Lexer.RWS(value, index);
         if (rws === index) return;
         let start = index;
         index = rws;
-        if (!Utils.equals(value, index, expr)) return;
-        index += expr.length;
+
+        const exprName = expr.toString();
+
+        if (!Utils.equals(value, index, exprName)) return;
+        index += exprName.length;
         rws = Lexer.RWS(value, index);
         if (rws === index) return;
         index = rws;
@@ -140,19 +144,19 @@ export namespace Expressions {
 
         return Lexer.tokenize(value, start, index, token.value, tokenType);
     }
-    export function eqExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, "eq", Lexer.TokenType.EqualsExpression); }
-    export function neExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, "ne", Lexer.TokenType.NotEqualsExpression); }
-    export function ltExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, "lt", Lexer.TokenType.LesserThanExpression); }
-    export function leExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, "le", Lexer.TokenType.LesserOrEqualsExpression); }
-    export function gtExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, "gt", Lexer.TokenType.GreaterThanExpression); }
-    export function geExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, "ge", Lexer.TokenType.GreaterOrEqualsExpression); }
-    export function hasExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, "has", Lexer.TokenType.HasExpression); }
+    export function eqExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, ODataOperator.Equal, Lexer.TokenType.EqualsExpression); }
+    export function neExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, ODataOperator.NotEqual, Lexer.TokenType.NotEqualsExpression); }
+    export function ltExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, ODataOperator.Less, Lexer.TokenType.LesserThanExpression); }
+    export function leExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, ODataOperator.LessOrEqual, Lexer.TokenType.LesserOrEqualsExpression); }
+    export function gtExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, ODataOperator.Greater, Lexer.TokenType.GreaterThanExpression); }
+    export function geExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, ODataOperator.GreaterOrEqual, Lexer.TokenType.GreaterOrEqualsExpression); }
+    export function hasExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index,ODataOperator.Has, Lexer.TokenType.HasExpression); }
 
-    export function addExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, "add", Lexer.TokenType.AddExpression); }
-    export function subExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, "sub", Lexer.TokenType.SubExpression); }
-    export function mulExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, "mul", Lexer.TokenType.MulExpression); }
-    export function divExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, "div", Lexer.TokenType.DivExpression); }
-    export function modExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, "mod", Lexer.TokenType.ModExpression); }
+    export function addExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, ODataOperator.Add, Lexer.TokenType.AddExpression); }
+    export function subExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, ODataOperator.Subtract, Lexer.TokenType.SubExpression); }
+    export function mulExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, ODataOperator.Multiply, Lexer.TokenType.MulExpression); }
+    export function divExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, ODataOperator.Divide, Lexer.TokenType.DivExpression); }
+    export function modExpr(value: Utils.SourceArray, index: number): NullableToken { return leftRightExpr(value, index, ODataOperator.Mod, Lexer.TokenType.ModExpression); }
 
     export function notExpr(value: Utils.SourceArray, index: number): Lexer.Token| undefined  {
         if (!Utils.equals(value, index, "not")) return;
@@ -233,13 +237,15 @@ export namespace Expressions {
             maxDateTimeMethodCallExpr(value, index) ||
             nowMethodCallExpr(value, index);
     }
-    export function methodCallExprFactory(value: Utils.SourceArray, index: number, method: string, min?: number, max?: number): NullableToken {
+    export function methodCallExprFactory(value: Utils.SourceArray, index: number, method: ODataMethod, min?: number, max?: number): NullableToken {
         if (min === undefined) min = 0;
         if (max === undefined) max = min;
 
-        if (!Utils.equals(value, index, method)) return;
+        const methodName = method.toString();
+        
+        if (!Utils.equals(value, index, methodName)) return;
         let start = index;
-        index += method.length;
+        index += methodName.length;
         let open = Lexer.OPEN(value, index);
         if (!open) return;
         index = open;
@@ -268,45 +274,45 @@ export namespace Expressions {
         index = close;
 
         return Lexer.tokenize(value, start, index, {
-            method: method,
+            method: methodName,
             parameters: parameters
         }, Lexer.TokenType.MethodCallExpression);
     }
-    export function containsMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "contains", 2); }
-    export function startsWithMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "startswith", 2); }
-    export function endsWithMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "endswith", 2); }
-    export function lengthMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "length", 1); }
-    export function indexOfMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "indexof", 2); }
-    export function substringMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "substring", 2, 3); }
-    export function substringOfMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "substringof", 2); }
-    export function toLowerMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "tolower", 1); }
-    export function toUpperMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "toupper", 1); }
-    export function trimMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "trim", 1); }
-    export function concatMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "concat", 2); }
+    export function containsMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.Contains, 2); }
+    export function startsWithMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.StartsWith, 2); }
+    export function endsWithMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.EndsWith, 2); }
+    export function lengthMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.Length, 1); }
+    export function indexOfMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.IndexOf, 2); }
+    export function substringMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.Substring, 2, 3); }
+    export function substringOfMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.SubstringOf, 2); }
+    export function toLowerMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.ToLower, 1); }
+    export function toUpperMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.ToUpper, 1); }
+    export function trimMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.Trim, 1); }
+    export function concatMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.Concat, 2); }
 
-    export function yearMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "year", 1); }
-    export function monthMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "month", 1); }
-    export function dayMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "day", 1); }
-    export function hourMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "hour", 1); }
-    export function minuteMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "minute", 1); }
-    export function secondMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "second", 1); }
-    export function fractionalsecondsMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "fractionalseconds", 1); }
-    export function totalsecondsMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "totalseconds", 1); }
-    export function dateMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "date", 1); }
-    export function timeMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "time", 1); }
-    export function totalOffsetMinutesMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "totaloffsetminutes", 1); }
+    export function yearMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.Year, 1); }
+    export function monthMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.Month, 1); }
+    export function dayMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.Day, 1); }
+    export function hourMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.Hour, 1); }
+    export function minuteMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.Minute, 1); }
+    export function secondMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.Second, 1); }
+    export function fractionalsecondsMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.FractionalSeconds, 1); }
+    export function totalsecondsMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index,ODataMethod.TotalSeconds, 1); }
+    export function dateMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.Date, 1); }
+    export function timeMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.Time, 1); }
+    export function totalOffsetMinutesMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.TotalOffsetMinutes, 1); }
 
-    export function minDateTimeMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "mindatetime", 0); }
-    export function maxDateTimeMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "maxdatetime", 0); }
-    export function nowMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "now", 0); }
+    export function minDateTimeMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.MinDateTime, 0); }
+    export function maxDateTimeMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.MaxDateTime, 0); }
+    export function nowMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.Now, 0); }
 
-    export function roundMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "round", 1); }
-    export function floorMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "floor", 1); }
-    export function ceilingMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "ceiling", 1); }
+    export function roundMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.Round, 1); }
+    export function floorMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.Floor, 1); }
+    export function ceilingMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.Ceiling, 1); }
 
-    export function distanceMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "geo.distance", 2); }
-    export function geoLengthMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "geo.length", 1); }
-    export function intersectsMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "geo.intersects", 2); }
+    export function distanceMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.Distance, 2); }
+    export function geoLengthMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.GeoLength, 1); }
+    export function intersectsMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, ODataMethod.Intersects, 2); }
 
     export function isofExpr(value: Utils.SourceArray, index: number): NullableToken {
         if (!Utils.equals(value, index, "isof")) return;
@@ -869,15 +875,8 @@ export function customFunctionExpr(value: Utils.SourceArray, index: number): Nul
 
     // For safety, check if this is a known OData function
     const funcName = token.value.name.toLowerCase();
-    const knownFunctions = [
-        'contains', 'startswith', 'endswith', 'length', 'indexof', 'substring',
-        'tolower', 'toupper', 'trim', 'concat', 'year', 'month', 'day', 'hour',
-        'minute', 'second', 'round', 'floor', 'ceiling', 'now', 'isof', 'cast',
-        'all', 'any', 'filter'
-    ];
-    if (knownFunctions.includes(funcName)) {
-        return;
-    }
+    
+    if(Object.values(ODataMethod).includes(funcName as ODataMethod)) return;
 
     const params = customFunctionParamsExpr(value, token.next);
     if (!params) return;
