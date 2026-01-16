@@ -3,58 +3,41 @@ import Lexer from "./lexer";
 import PrimitiveLiteral from "./primitiveLiteral";
 import NameOrIdentifier from "./nameOrIdentifier";
 import ArrayOrObject from "./json";
-import { isNumericLiteral } from "typescript";
 import { NullableToken } from "./types/nullableToken";
 
 export namespace Expressions {
     export function commonExpr(value: Utils.SourceArray, index: number): NullableToken {
-    let token = PrimitiveLiteral.primitiveLiteral(value, index) ||
-        parameterAlias(value, index) ||
-        ArrayOrObject.arrayOrObject(value, index) ||
-        rootExpr(value, index) ||
-        methodCallExpr(value, index) ||
-        firstMemberExpr(value, index) ||
-        functionExpr(value, index) ||
-        negateExpr(value, index) ||
-        parenExpr(value, index) ||
-        castExpr(value, index);
+        let token = PrimitiveLiteral.primitiveLiteral(value, index) ||
+            parameterAlias(value, index) ||
+            ArrayOrObject.arrayOrObject(value, index) ||
+            rootExpr(value, index) ||
+            methodCallExpr(value, index) ||
+            firstMemberExpr(value, index) ||
+            functionExpr(value, index) ||
+            negateExpr(value, index) ||
+            parenExpr(value, index) ||
+            castExpr(value, index);
 
-    if (!token) return;
+        if (!token) return;
 
-    // Check for time unit specifier after a number (e.g., "1 day")
-    if (token.type === Lexer.TokenType.Literal && typeof token.value === "number") {
-        const rws = Lexer.RWS(value, token.next);
-        if (rws > token.next) {
-            const unit = Utils.parseTimeUnit(value, rws);
-            if (unit) {
-                token.value = {
-                    value: token.value,
-                    unit: unit
-                };
-                token.next = rws + unit.length;
-                token.raw = Utils.stringify(value, token.position, token.next);
-            }
-        }
-    }
+        let expr = addExpr(value, token.next) ||
+            subExpr(value, token.next) ||
+            mulExpr(value, token.next) ||
+            divExpr(value, token.next) ||
+            modExpr(value, token.next);
 
-    let expr = addExpr(value, token.next) ||
-        subExpr(value, token.next) ||
-        mulExpr(value, token.next) ||
-        divExpr(value, token.next) ||
-        modExpr(value, token.next);
+        if (expr) {
+            token.value = {
+                left: Lexer.clone(token),
+                right: expr.value
+            };
+            token.next = expr.value.next;
+            token.type = expr.type;
+            token.raw = Utils.stringify(value, token.position, token.next);
 
-    if (expr) {
-        token.value = {
-            left: Lexer.clone(token),
-            right: expr.value
-        };
-        token.next = expr.value.next;
-        token.type = expr.type;
-        token.raw = Utils.stringify(value, token.position, token.next);
-    }
-
-    return Lexer.tokenize(value, token.position, token.next, token, Lexer.TokenType.CommonExpression);
+    if (token) return Lexer.tokenize(value, token.position, token.next, token, Lexer.TokenType.CommonExpression);
 }
+    }
 
     export function boolCommonExpr(value: Utils.SourceArray, index: number): NullableToken {
         let token = isofExpr(value, index) ||
@@ -313,6 +296,7 @@ export namespace Expressions {
 
     export function minDateTimeMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "mindatetime", 0); }
     export function maxDateTimeMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "maxdatetime", 0); }
+    export function nowMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "now", 0); }
 
     export function roundMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "round", 1); }
     export function floorMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "floor", 1); }
@@ -321,42 +305,6 @@ export namespace Expressions {
     export function distanceMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "geo.distance", 2); }
     export function geoLengthMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "geo.length", 1); }
     export function intersectsMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken { return methodCallExprFactory(value, index, "geo.intersects", 2); }
-
-    export function nowMethodCallExpr(value: Utils.SourceArray, index: number): NullableToken {
-        const token = methodCallExprFactory(value, index, "now", 0);
-        if (!token) return;
-        let rws = Lexer.RWS(value, token.next);
-        if (rws > token.next) {
-            const operator = value[rws];
-             const isSubtraction = operator === 0x2D;
-             const isAddition = operator === 0x2B;
-            if (isSubtraction || isAddition) {
-                const subRws = Lexer.RWS(value, rws + 1);
-                if (subRws > rws + 1) {
-                    const numberToken = PrimitiveLiteral.primitiveLiteral(value, subRws);
-                    if (numberToken && Utils.isNumericType(numberToken.value)) {
-                        const unitRws = Lexer.RWS(value, numberToken.next);
-                        if (unitRws > numberToken.next) {
-                            const unit = Utils.parseTimeUnit(value, unitRws);
-                            if (unit) {
-                                token.value = {
-                                    method: token.value.method,
-                                    offset: {
-                                        value: isSubtraction ? -Number(numberToken.raw) : Number(numberToken.raw),
-                                        unit: unit
-                                    }
-                                };
-                                token.next = unitRws + unit.length;
-                                token.raw = Utils.stringify(value, token.position, token.next);
-                                return token;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return token;
-    }
 
     export function isofExpr(value: Utils.SourceArray, index: number): NullableToken {
         if (!Utils.equals(value, index, "isof")) return;
